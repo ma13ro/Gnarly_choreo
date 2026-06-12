@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choreo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0f;
+  color: #dde4ec;
+  font-family: 'Space Grotesk', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.page { display:none; flex-direction:column; align-items:center; min-height:100vh; width:100%; max-width:640px; }
+.page.on { display:flex; }
+
+/* ── SETUP ── */
+#pg-setup { justify-content:center; padding:48px 20px; gap:24px; }
+.brand { text-align:center; }
+.brand h1 { font-size:48px; font-weight:800; letter-spacing:-.04em; color:#fff; }
+.brand h1 em { color:#4EC9A0; font-style:normal; }
+.brand p { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.3); letter-spacing:.15em; text-transform:uppercase; margin-top:4px; }
+.brand .credit { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.15); margin-top:6px; }
+
+.card { background:#0f1318; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:28px; width:100%; max-width:460px; display:flex; flex-direction:column; gap:14px; }
+.field { display:flex; flex-direction:column; gap:6px; }
+.field label { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,.35); text-transform:uppercase; letter-spacing:.1em; }
+.field input { background:#161c22; border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:11px 14px; color:#dde4ec; font-family:'JetBrains Mono',monospace; font-size:14px; outline:none; width:100%; transition:border-color .15s; }
+.field input:focus { border-color:#4EC9A0; }
+.field input::placeholder { color:rgba(255,255,255,.18); }
+.row2 { display:flex; gap:10px; }
+.row2 .field { flex:1; }
+
+.snap-row { display:flex; gap:8px; }
+.snap-btn { flex:1; padding:9px 0; background:transparent; border:1px solid rgba(255,255,255,.12); border-radius:8px; color:rgba(255,255,255,.35); font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer; transition:all .12s; }
+.snap-btn:hover { color:#dde4ec; border-color:rgba(255,255,255,.28); }
+.snap-btn.on { background:rgba(78,201,160,.12); border-color:#4EC9A0; color:#4EC9A0; }
+
+.divider { height:1px; background:rgba(255,255,255,.07); }
+
+.go-btn { width:100%; padding:18px; background:linear-gradient(135deg,#4EC9A0,#3bb8a8); border:none; border-radius:11px; color:#080c10; font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; transition:all .15s; box-shadow:0 4px 24px rgba(78,201,160,.28); }
+.go-btn:hover { transform:translateY(-1px); box-shadow:0 6px 28px rgba(78,201,160,.44); }
+.go-btn:active { transform:scale(.98); }
+
+.import-btn { width:100%; padding:12px; background:transparent; border:1.5px dashed rgba(78,201,160,.3); border-radius:10px; color:rgba(78,201,160,.6); font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; }
+.import-btn:hover { border-color:#4EC9A0; color:#4EC9A0; }
+
+.su-bpm-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.su-bpm-btn { flex-shrink:0; padding:9px 14px; background:transparent; border:1px solid rgba(78,201,160,.25); border-radius:8px; color:rgba(78,201,160,.65); font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.su-bpm-btn:hover { border-color:#4EC9A0; color:#4EC9A0; }
+.su-bpm-btn:disabled { opacity:.4; cursor:default; }
+.su-bpm-result { font-family:'JetBrains Mono',monospace; font-size:12px; color:rgba(255,255,255,.35); flex:1; min-width:0; }
+.su-bpm-result .bpm-val { color:#4EC9A0; font-size:15px; font-weight:600; }
+.su-bpm-result .bpm-ok { background:rgba(78,201,160,.12); border:1px solid rgba(78,201,160,.35); border-radius:6px; color:#4EC9A0; font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 10px; cursor:pointer; transition:all .12s; margin-left:6px; }
+.su-bpm-result .bpm-ok:hover { background:rgba(78,201,160,.24); }
+.su-bpm-result .bpm-ok.confirmed { background:rgba(78,201,160,.22); border-color:#4EC9A0; color:#fff; }
+.su-bpm-result .bpm-pick { color:#4EC9A0; cursor:pointer; text-decoration:underline dotted; margin:0 3px; }
+.su-bpm-result .bpm-pick:hover { color:#fff; }
+
+.saved-list { display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto; }
+.saved-empty { font-family:'JetBrains Mono',monospace; font-size:12px; color:rgba(255,255,255,.25); text-align:center; padding:12px 0; }
+.saved-item { display:flex; align-items:center; justify-content:space-between; background:#161c22; border:1px solid rgba(255,255,255,.07); border-radius:9px; padding:10px 14px; }
+.saved-item-info { flex:1; }
+.saved-item-title { font-size:13px; font-weight:500; }
+.saved-item-meta { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.3); margin-top:2px; }
+.saved-item-btns { display:flex; gap:7px; }
+.icon-btn { background:transparent; border:1px solid rgba(255,255,255,.12); border-radius:6px; color:rgba(255,255,255,.35); font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 10px; cursor:pointer; transition:all .12s; }
+.icon-btn:hover { color:#dde4ec; border-color:rgba(255,255,255,.3); }
+.icon-btn.edit { color:#4EC9A0; border-color:rgba(78,201,160,.3); }
+.icon-btn.dl { color:#E8B84B; border-color:rgba(232,184,75,.3); }
+.icon-btn.del:hover { color:#E05C74; border-color:rgba(224,92,116,.4); }
+
+/* ── AUTHOR ── */
+#pg-author { padding:0; gap:0; }
+
+.au-bar { display:flex; align-items:center; justify-content:space-between; width:100%; padding:10px 14px; gap:10px; flex-wrap:wrap; }
+.au-bar-left { display:flex; align-items:center; gap:10px; }
+.back-btn { background:transparent; border:1px solid rgba(255,255,255,.12); border-radius:7px; color:rgba(255,255,255,.4); font-family:'Space Grotesk',sans-serif; font-size:12px; padding:6px 13px; cursor:pointer; transition:all .12s; }
+.back-btn:hover { color:#dde4ec; }
+.au-song { font-size:14px; font-weight:600; }
+.au-counts { display:flex; gap:8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.3); }
+.au-counts span { background:#0f1318; border:1px solid rgba(255,255,255,.07); border-radius:100px; padding:4px 11px; }
+.au-counts b { color:#dde4ec; }
+
+.au-video { width:100%; aspect-ratio:16/9; max-height:38vh; background:#000; position:relative; overflow:hidden; }
+.au-video iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:none; }
+
+.au-highway { width:100%; height:400px; max-height:45vh; position:relative; overflow:hidden; touch-action:none; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+.au-highway canvas { position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; -webkit-tap-highlight-color:transparent; }
+
+/* controls */
+.au-controls { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:8px 10px; background:#0f1318; border-top:1px solid rgba(255,255,255,.07); border-bottom:1px solid rgba(255,255,255,.07); flex-wrap:wrap; }
+.ctrl-btn { background:#161c22; border:1px solid rgba(255,255,255,.12); border-radius:7px; color:#dde4ec; font-family:'Space Grotesk',sans-serif; font-size:12px; padding:7px 13px; cursor:pointer; transition:all .12s; white-space:nowrap; }
+.ctrl-btn:hover { border-color:rgba(255,255,255,.28); }
+.frame-btn { background:#161c22; border:1px solid rgba(255,255,255,.12); border-radius:7px; color:#E8B84B; font-family:'JetBrains Mono',monospace; font-size:11px; padding:7px 10px; cursor:pointer; transition:all .12s; }
+.frame-btn:hover { background:rgba(232,184,75,.08); border-color:rgba(232,184,75,.3); }
+.frame-btn:active { transform:scale(.92); }
+.ctrl-time { font-family:'JetBrains Mono',monospace; font-size:14px; min-width:58px; text-align:center; }
+.ctrl-beat { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.35); }
+
+/* rec button */
+.rec-btn { width:36px; height:36px; border-radius:50%; background:transparent; border:2px solid rgba(224,92,116,.4); color:rgba(224,92,116,.5); font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; flex-shrink:0; -webkit-tap-highlight-color:transparent; gap:2px; }
+.rec-btn::before { content:''; width:7px; height:7px; border-radius:50%; background:rgba(224,92,116,.5); flex-shrink:0; transition:background .15s; }
+.rec-btn.active { background:#E05C74; border-color:#E05C74; color:#fff; box-shadow:0 0 12px rgba(224,92,116,.5); animation:rec-pulse 1s ease-in-out infinite; }
+.rec-btn.active::before { background:#fff; }
+.rec-btn:hover::before { background:#E05C74; }
+@keyframes rec-pulse { 0%,100%{box-shadow:0 0 8px rgba(224,92,116,.4);} 50%{box-shadow:0 0 18px rgba(224,92,116,.8);} }
+
+/* bpm */
+.au-bpm { display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 10px; flex-wrap:wrap; }
+.bpm-lbl { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.35); }
+.bpm-nudge { width:28px; height:28px; background:#161c22; border:1px solid rgba(255,255,255,.12); border-radius:6px; color:#dde4ec; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .12s; user-select:none; flex-shrink:0; }
+.bpm-nudge:hover { border-color:rgba(255,255,255,.28); }
+.bpm-nudge:active { transform:scale(.88); }
+.bpm-field { display:flex; align-items:center; gap:4px; background:#161c22; border:1px solid rgba(255,255,255,.12); border-radius:7px; padding:4px 8px; }
+.bpm-input { width:52px; background:transparent; border:none; color:#4EC9A0; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:500; text-align:center; outline:none; -moz-appearance:textfield; }
+.bpm-input::-webkit-outer-spin-button,.bpm-input::-webkit-inner-spin-button { -webkit-appearance:none; }
+.bpm-unit { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.35); }
+.mark-btn { background:rgba(232,184,75,.08); border:1px solid rgba(232,184,75,.3); border-radius:7px; color:#E8B84B; font-family:'JetBrains Mono',monospace; font-size:11px; padding:6px 12px; cursor:pointer; transition:all .12s; white-space:nowrap; }
+.mark-btn:hover { background:rgba(232,184,75,.18); }
+.tap-btn { background:rgba(78,201,160,.06); border:1px solid rgba(78,201,160,.25); border-radius:7px; color:rgba(78,201,160,.7); font-family:'JetBrains Mono',monospace; font-size:11px; padding:6px 12px; cursor:pointer; transition:background .08s,border-color .08s,color .08s,transform .08s; white-space:nowrap; user-select:none; -webkit-user-select:none; }
+.tap-btn:hover { border-color:rgba(78,201,160,.5); color:#4EC9A0; }
+.tap-btn.flash { background:rgba(78,201,160,.28); border-color:#4EC9A0; color:#4EC9A0; transform:scale(.93); }
+.bpm-markers { display:flex; gap:6px; flex:1; overflow-x:auto; min-width:0; max-width:100%; }
+.bm-chip { display:flex; align-items:center; gap:4px; background:rgba(232,184,75,.1); border:1px solid rgba(232,184,75,.2); border-radius:6px; padding:3px 8px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#E8B84B; white-space:nowrap; flex-shrink:0; }
+.bm-chip.active { background:rgba(232,184,75,.22); border-color:#E8B84B; }
+.bm-del { cursor:pointer; color:rgba(232,184,75,.45); font-size:10px; margin-left:2px; }
+.bm-del:hover { color:#E8B84B; }
+.bpm-status { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,.3); padding:0 10px 6px; text-align:center; }
+
+/* actions */
+.au-actions { display:flex; gap:8px; padding:10px; padding-bottom:24px; width:100%; }
+.act-btn { flex:1; padding:13px; border:none; border-radius:10px; font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; letter-spacing:.02em; }
+.act-export { background:transparent; border:1.5px solid #4EC9A0; color:#4EC9A0; }
+.act-export:hover { background:rgba(78,201,160,.1); }
+.act-save { background:#4EC9A0; color:#080c10; }
+.act-save:hover { background:#3db88d; }
+
+.au-hint { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,.2); text-align:center; padding:0 10px 10px; line-height:1.8; }
+.au-hint kbd { background:#161c22; border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:1px 6px; font-family:inherit; font-size:11px; }
+
+#toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1d252e; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:9px 20px; font-size:13px; color:#dde4ec; opacity:0; pointer-events:none; transition:opacity .2s; z-index:9999; white-space:nowrap; }
+#toast.show { opacity:1; }
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,.12); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="pg-setup" class="page on">
+  <div class="brand">
+    <h1>Choreo<em>.</em></h1>
+    <p>SM Chart Authoring Tool</p>
+    <p class="credit">BY CLAUDE &amp; GNARLY</p>
+  </div>
+  <div class="card">
+    <div class="field">
+      <label>YouTube URL or Video ID</label>
+      <input id="su-url" type="text" placeholder="https://youtu.be/…" />
+    </div>
+    <div class="row2">
+      <div class="field"><label>Song Title</label><input id="su-title" type="text" placeholder="EZPZ" /></div>
+      <div class="field"><label>Artist</label><input id="su-artist" type="text" placeholder="GNARLY" /></div>
+    </div>
+    <div class="su-bpm-row">
+      <button class="su-bpm-btn" id="su-bpm-btn">🔍 Look up BPM</button>
+      <div class="su-bpm-result" id="su-bpm-result"></div>
+    </div>
+    <div class="field">
+      <label>Snap</label>
+      <div class="snap-row">
+        <button class="snap-btn" data-q="4">1/4</button>
+        <button class="snap-btn on" data-q="8">1/8</button>
+        <button class="snap-btn" data-q="16">1/16</button>
+        <button class="snap-btn" data-q="0">Free</button>
+      </div>
+    </div>
+    <button class="go-btn" id="su-go">EVERYTHING'S GNARLY</button>
+    <div class="divider"></div>
+    <button class="import-btn" id="import-btn">⬆ Import existing .sm to edit</button>
+    <input type="file" id="sm-file" accept=".sm,.ssc" style="display:none" />
+    <div class="field">
+      <label>Saved Charts</label>
+      <div class="saved-list" id="saved-list"><p class="saved-empty">No charts yet.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTHOR -->
+<div id="pg-author" class="page">
+  <div class="au-bar">
+    <div class="au-bar-left">
+      <button class="back-btn" id="au-back">← Back</button>
+      <div class="au-song" id="au-song">—</div>
+    </div>
+    <div class="au-counts">
+      <span>Taps <b id="cnt-taps">0</b></span>
+      <span>Holds <b id="cnt-holds">0</b></span>
+      <span><b id="cnt-time">0:00</b></span>
+    </div>
+  </div>
+
+  <div class="au-video" id="au-video"><div id="au-slot"></div></div>
+
+  <div class="au-highway" id="au-highway"><canvas id="hw-cv"></canvas></div>
+
+  <div class="au-controls">
+    <button class="ctrl-btn" id="au-pause">⏸ Pause</button>
+    <button class="frame-btn" id="skip-back">‹10</button>
+    <button class="frame-btn" id="fbk">◀◀</button>
+    <button class="frame-btn" id="ffw">▶▶</button>
+    <button class="frame-btn" id="skip-fwd">10›</button>
+    <button class="rec-btn active" id="rec-btn">K</button>
+    <span class="ctrl-time" id="au-time">0:00.0</span>
+    <span class="ctrl-beat" id="au-beat">—</span>
+    <button class="ctrl-btn" id="au-undo" style="background:transparent;border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.4)">↩ Undo</button>
+  </div>
+
+  <div class="au-bpm">
+    <span class="bpm-lbl">BPM</span>
+    <button class="bpm-nudge" id="bn10">«</button>
+    <button class="bpm-nudge" id="bn1">‹</button>
+    <div class="bpm-field">
+      <input class="bpm-input" id="bpm-live" type="number" placeholder="120" min="40" max="300" />
+      <span class="bpm-unit">bpm</span>
+    </div>
+    <button class="bpm-nudge" id="bp1">›</button>
+    <button class="bpm-nudge" id="bp10">»</button>
+    <button class="tap-btn" id="tap-btn">✦ Tap</button>
+    <button class="mark-btn" id="drop-btn">⊕ Mark</button>
+    <div class="bpm-markers" id="bpm-markers"></div>
+  </div>
+  <div class="bpm-status" id="bpm-status"></div>
+
+  <div class="au-actions">
+    <button class="act-btn act-export" id="au-export">⬇ Export .sm</button>
+    <button class="act-btn act-save"   id="au-save">Save Chart</button>
+  </div>
+  <p class="au-hint"><kbd>Q W O P</kbd> tap · hold&gt;300ms=freeze · <kbd>Space</kbd> pause · <kbd>, .</kbd> frame · <kbd>Ctrl Z</kbd> undo · <kbd>T</kbd> tap tempo</p>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════ */
+const LC     = ['#4EC9A0','#E8B84B','#E05C74','#7C6FE0'];
+const ARROWS = ['←','↓','↑','→'];
+const LKEYS  = 'qwop';
+const HOLD_MS = 300;
+const FRAME_S = 2/30;
+const REC_FRAC_ON  = 0.75;
+const REC_FRAC_OFF = 0.25;
+const LOOK_AHEAD   = 0.625;
+// pxPerSec = H / PX_WIN always — receptor Y moves, speed never changes
+const PX_WIN = 2.5; // fixed 2.5s window, regardless of REC_FRAC
+
+let REC_FRAC = REC_FRAC_ON;
+
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let saved = [], session = null, quantDiv = 8, recording = true;
+let ytPlayer = null, ytApiReady = false, ytQ = [];
+let holdStart = [null,null,null,null], holdActive = [false,false,false,false];
+let kd = {}, authorRaf = null, hwRaf = null;
+const laneFlash = [0,0,0,0];
+const hwPointers = new Map();
+let metronomeId = null;
+let tapTimes = [], tapResetTimer = null;
+
+/* ═══════════════════════════════════════════
+   STORAGE
+═══════════════════════════════════════════ */
+function loadSaved(){ try{ saved=JSON.parse(localStorage.getItem('choreo_v13')||'[]'); }catch(_){ saved=[]; } }
+function persist(){ localStorage.setItem('choreo_v13',JSON.stringify(saved)); }
+
+/* ═══════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════ */
+function showPage(id){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('on')); document.getElementById(id).classList.add('on'); }
+function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(s){ if(!s||isNaN(s))return'0:00.0'; const m=Math.floor(s/60),sec=(s%60).toFixed(1); return m+':'+(parseFloat(sec)<10?'0':'')+sec; }
+function rrect(ctx,x,y,w,h,r){ ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath(); }
+let toastT;
+function toast(msg,dur=1800){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),dur); }
+
+/* ═══════════════════════════════════════════
+   BPM — markers stored as {time, bpm}
+   time = video seconds, committed only on Mark
+═══════════════════════════════════════════ */
+function sortedMarkers(){ return [...session.bpmMarkers].sort((a,b)=>a.time-b.time); }
+
+// BPM active at a given video time
+function bpmAt(t){
+  if(!session||!session.bpmMarkers.length) return null;
+  const ms=sortedMarkers();
+  let bpm=ms[0].bpm;
+  for(const m of ms){ if(m.time<=t) bpm=m.bpm; else break; }
+  return bpm;
+}
+function currentBpm(){ return bpmAt(getTime()); }
+
+// Convert video time → cumulative beat number
+function timeToBeat(t){
+  if(!session) return 0;
+  const ms=sortedMarkers().filter(m=>m.bpm);
+  if(!ms.length) return t*(120/60);
+  let beat=0, prev=ms[0].time;
+  for(let i=0;i<ms.length;i++){
+    const m=ms[i], next=i+1<ms.length?ms[i+1].time:Infinity;
+    const seg=Math.min(t,next)-Math.max(prev,m.time);
+    if(seg>0) beat+=seg*(m.bpm/60);
+    if(t<=next) break;
+    prev=next;
+  }
+  return Math.max(0,beat);
+}
+
+// Convert beat → video time
+function beatToTime(beat){
+  if(!session) return beat*(60/120);
+  const ms=sortedMarkers().filter(m=>m.bpm);
+  if(!ms.length) return beat*(60/120);
+  let b=0, time=ms[0].time;
+  for(let i=0;i<ms.length;i++){
+    const m=ms[i], next=i+1<ms.length?ms[i+1].time:Infinity;
+    const beatsInSeg=(next-Math.max(time,m.time))*(m.bpm/60);
+    if(beat<=b+beatsInSeg||i===ms.length-1){ time=Math.max(time,m.time)+(beat-b)*(60/m.bpm); break; }
+    b+=beatsInSeg; time=next;
+  }
+  return time;
+}
+
+function getLiveBpm(){ const v=parseFloat(document.getElementById('bpm-live').value); return(v&&v>=40&&v<=300)?Math.round(v):null; }
+function setLiveBpm(v){ const el=document.getElementById('bpm-live'); if(v&&v>=40&&v<=300){ el.value=Math.round(v); }else{ el.value=''; } }
+
+function quantize(t){
+  if(!quantDiv) return t;
+  const bpm=currentBpm()||120;
+  const slot=1/((bpm/60)*(quantDiv/4));
+  return Math.round(t/slot)*slot;
+}
+
+function startMetronome(bpm){
+  if(metronomeId){ clearInterval(metronomeId); metronomeId=null; }
+  if(!bpm) return;
+  metronomeId=setInterval(()=>{}, 60000/bpm);
+}
+
+function renderBpmChips(){
+  const el=document.getElementById('bpm-markers'); if(!el) return;
+  const ms=session?session.bpmMarkers:[];
+  const now=getTime();
+  if(!ms.length){ el.innerHTML=''; return; }
+  const sorted=sortedMarkers();
+  el.innerHTML=sorted.map((m,i)=>{
+    const isAct=m.time<=now&&(i===sorted.length-1||sorted[i+1].time>now);
+    const lbl=i===0?`${m.bpm} BPM`:`${m.bpm}@${fmt(m.time)}`;
+    return`<div class="bm-chip${isAct?' active':''}">${lbl}<span class="bm-del" onclick="delMarker(${i})">✕</span></div>`;
+  }).join('');
+}
+function delMarker(i){ session.bpmMarkers.splice(i,1); renderBpmChips(); toast('Removed BPM marker'); }
+
+/* ═══════════════════════════════════════════
+   YOUTUBE
+═══════════════════════════════════════════ */
+window.onYouTubeIframeAPIReady=()=>{ ytApiReady=true; ytQ.forEach(f=>f()); ytQ=[]; };
+(function(){ if(document.querySelector('script[src*="youtube.com/iframe_api"]'))return; const s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api'; document.head.appendChild(s); })();
+
+function createPlayer(vid){
+  const go=()=>{ ytPlayer=new YT.Player('au-slot',{ width:'100%',height:'100%',videoId:vid, playerVars:{autoplay:1,controls:1,rel:0,modestbranding:1}, events:{ onReady:e=>e.target.playVideo(), onStateChange:e=>{ const b=document.getElementById('au-pause'); if(b)b.textContent=(e.data===YT.PlayerState.PAUSED||e.data===YT.PlayerState.ENDED)?'▶ Play':'⏸ Pause'; } } }); };
+  if(ytApiReady)go(); else ytQ.push(go);
+}
+function getTime(){ if(!ytPlayer)return 0; try{ return ytPlayer.getCurrentTime()||0; }catch(_){ return 0; } }
+function seekTo(t){ if(!ytPlayer)return; try{ ytPlayer.seekTo(Math.max(0,t),true); }catch(_){} }
+function togglePause(){ if(!ytPlayer)return; try{ const s=ytPlayer.getPlayerState(); if(s===YT.PlayerState.PLAYING)ytPlayer.pauseVideo(); else ytPlayer.playVideo(); }catch(_){} }
+function parseVid(raw){ raw=(raw||'').trim(); for(const p of[/youtu\.be\/([a-zA-Z0-9_-]{11})/,/[?&]v=([a-zA-Z0-9_-]{11})/,/embed\/([a-zA-Z0-9_-]{11})/,/^([a-zA-Z0-9_-]{11})$/]){ const m=raw.match(p); if(m)return m[1]; } return null; }
+
+/* ═══════════════════════════════════════════
+   BPM LOOKUP — pure client-side, zero backend
+   All sources have open CORS headers and work
+   from any host (Netlify, Cloudflare, local).
+
+   Sources tried in order:
+     1. MusicBrainz recording search + tempo
+     2. iTunes Search API (has BPM on many tracks)
+     3. corsproxy.io → getsongbpm.com (HTML scrape)
+═══════════════════════════════════════════ */
+async function getVideoTitle(vid){
+  try{
+    const r=await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vid}&format=json`,{signal:AbortSignal.timeout(5000)});
+    if(!r.ok)return null; return(await r.json()).title||null;
+  }catch(_){return null;}
+}
+function parseVideoTitle(raw){
+  if(!raw)return{artist:'',title:''};
+  const c=raw.replace(/\(Official.*?\)/gi,'').replace(/\[Official.*?\]/gi,'').replace(/\(M\/V\)/gi,'').replace(/\bMV\b/g,'').replace(/\bLyrics?\b/gi,'').replace(/\bFt\..*/gi,'').trim();
+  const sep=c.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  if(sep)return{artist:sep[1].trim(),title:sep[2].trim()};
+  return{artist:'',title:c};
+}
+function parseBpmFromText(text){
+  const pats=[/\b(\d{2,3})\s*bpm\b/i,/\bbpm[:\s]+(\d{2,3})\b/i,/\btempo[:\s]+(\d{2,3})\b/i,/\b(\d{2,3})\s*beats?\s*per\s*min/i];
+  for(const re of pats){const m=text.match(re);if(m){const b=parseInt(m[1],10);if(b>=40&&b<=300)return b;}}
+  return null;
+}
+
+// 1. MusicBrainz — fully open CORS API
+async function bpmFromMusicBrainz(artist,title){
+  if(!title)return null;
+  try{
+    const q=encodeURIComponent(`recording:"${title}"${artist?` AND artist:"${artist}"`:''}`)
+    const r=await fetch(`https://musicbrainz.org/ws/2/recording?query=${q}&limit=5&fmt=json`,
+      {signal:AbortSignal.timeout(7000),headers:{'User-Agent':'ChoreoApp/1.0'}});
+    if(!r.ok)return null;
+    const d=await r.json();
+    for(const rec of(d.recordings||[])){
+      if(rec.bpm){const b=parseInt(rec.bpm,10);if(b>=40&&b<=300)return b;}
+    }
+  }catch(_){}
+  return null;
+}
+
+// 2. iTunes Search API — open CORS, has BPM on many catalogue tracks
+async function bpmFromItunes(artist,title){
+  if(!title)return null;
+  try{
+    const term=encodeURIComponent([title,artist].filter(Boolean).join(' '));
+    const r=await fetch(`https://itunes.apple.com/search?term=${term}&media=music&entity=song&limit=5`,
+      {signal:AbortSignal.timeout(7000)});
+    if(!r.ok)return null;
+    const d=await r.json();
+    // iTunes doesn't expose BPM directly, but track name in result lets us
+    // confirm we have the right song — fall through to scrape with confidence
+    // Keep this slot for future: some regional endpoints return bpm field
+    if(d.results?.length){
+      const match=d.results.find(t=>title&&t.trackName?.toLowerCase().includes(title.toLowerCase()));
+      if(match?.bpm){const b=parseInt(match.bpm,10);if(b>=40&&b<=300)return b;}
+    }
+  }catch(_){}
+  return null;
+}
+
+// 3. GetSongBPM via corsproxy.io — reliable proxy, works on Cloudflare + Netlify
+async function bpmFromGetSongBpm(artist,title){
+  if(!title)return null;
+  try{
+    const q=encodeURIComponent(`${title}${artist?' '+artist:''}`);
+    const target=`https://getsongbpm.com/search?type=song&q=${q}`;
+    const r=await fetch(`https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+      {signal:AbortSignal.timeout(10000)});
+    if(!r.ok)return null;
+    const html=await r.text();
+    const m=html.match(/class="song-bpm"[^>]*>\s*(\d{2,3})\s*</i)
+      ||html.match(/"bpm"\s*:\s*"?(\d{2,3})"?/i)
+      ||html.match(/>\s*(\d{2,3})\s*<\/span>\s*BPM/i);
+    if(m){const b=parseInt(m[1],10);if(b>=40&&b<=300)return b;}
+    return parseBpmFromText(html.slice(0,8000));
+  }catch(_){}
+  return null;
+}
+
+async function searchBpmViaFunction(artist,title){
+  if(!artist&&!title)return null;
+  // Try in sequence — MusicBrainz first (fastest), then scrape
+  const mb=await bpmFromMusicBrainz(artist,title);
+  if(mb)return mb;
+  const it=await bpmFromItunes(artist,title);
+  if(it)return it;
+  return bpmFromGetSongBpm(artist,title);
+}
+
+async function autoLookupBpm(){
+  const st=document.getElementById('bpm-status');if(!st)return;
+  st.textContent='🔍 Looking up BPM…';
+  const defaults=['GNARLY','EZPZ','Untitled','Unknown',''];
+  const searchA=(async()=>{
+    const yt=await getVideoTitle(session.vid);if(!yt)return null;
+    const p=parseVideoTitle(yt);
+    if(p.artist&&defaults.includes(session.artist))session.artist=p.artist;
+    if(p.title&&defaults.includes(session.title))session.title=p.title;
+    document.getElementById('au-song').textContent=[session.title,session.artist].filter(Boolean).join(' — ')||'Untitled';
+    return searchBpmViaFunction(p.artist,p.title);
+  })();
+  const searchB=(async()=>{
+    const a=session.artist,t=session.title;
+    if(defaults.includes(a)&&defaults.includes(t))return null;
+    return searchBpmViaFunction(a,t);
+  })();
+  const[bpmA,bpmB]=await Promise.all([searchA,searchB]);
+  const valid=v=>v&&v>=60&&v<=220;
+  if(valid(bpmA)&&valid(bpmB)){
+    if(bpmA===bpmB){applyBpm(bpmA);st.textContent=`✓ ${bpmA} BPM`;}
+    else{st.innerHTML=`Two results: <span onclick="pickBpm(${bpmA})" style="cursor:pointer;color:#4EC9A0;margin-left:6px">${bpmA}</span> or <span onclick="pickBpm(${bpmB})" style="cursor:pointer;color:#4EC9A0;margin-left:4px">${bpmB}</span> or <span onclick="pickBpm(null)" style="cursor:pointer;color:rgba(255,255,255,.3);margin-left:4px">neither</span>`;}
+  }else if(valid(bpmA)){applyBpm(bpmA);st.textContent=`✓ ${bpmA} BPM`;}
+  else if(valid(bpmB)){applyBpm(bpmB);st.textContent=`✓ ${bpmB} BPM`;}
+  else{st.textContent='BPM not found — enter manually and press ⊕ Mark';}
+}
+function applyBpm(bpm){
+  setLiveBpm(bpm);
+  // Auto-apply as time-0 marker
+  session.bpmMarkers=session.bpmMarkers.filter(m=>m.time>0.1);
+  session.bpmMarkers.unshift({time:0,bpm});
+  session.bpmMarkers.sort((a,b)=>a.time-b.time);
+  renderBpmChips();
+  startMetronome(bpm);
+}
+function pickBpm(bpm){ const st=document.getElementById('bpm-status'); if(bpm){ applyBpm(bpm); st.textContent=`✓ ${bpm} BPM`; }else{ st.textContent='Enter BPM manually'; } }
+
+/* ═══════════════════════════════════════════
+   SETUP PAGE
+═══════════════════════════════════════════ */
+document.querySelectorAll('.snap-btn').forEach(b=>{ b.onclick=()=>{ document.querySelectorAll('.snap-btn').forEach(x=>x.classList.remove('on')); b.classList.add('on'); quantDiv=parseInt(b.dataset.q); }; });
+
+function renderSaved(){
+  loadSaved(); const el=document.getElementById('saved-list');
+  if(!saved.length){ el.innerHTML='<p class="saved-empty">No charts yet.</p>'; return; }
+  el.innerHTML=saved.map((c,i)=>`<div class="saved-item"><div class="saved-item-info"><div class="saved-item-title">${esc(c.title||'Untitled')} — ${esc(c.artist||'Unknown')}</div><div class="saved-item-meta">${c.notes.length} notes · ${c.bpmMarkers?.[0]?.bpm||'---'} BPM</div></div><div class="saved-item-btns"><button class="icon-btn edit" onclick="editChart(${i})">✎</button><button class="icon-btn dl" onclick="exportIdx(${i})">⬇</button><button class="icon-btn del" onclick="delChart(${i})">✕</button></div></div>`).join('');
+}
+
+document.getElementById('su-go').onclick=()=>{
+  const vid=parseVid(document.getElementById('su-url').value);
+  if(!vid){ toast('⚠ Paste a YouTube URL or video ID'); return; }
+  const title=document.getElementById('su-title').value.trim()||'';
+  const artist=document.getElementById('su-artist').value.trim()||'';
+  session={ vid, title, artist, offset:0, bpmMarkers:[], notes:[] };
+  // If a BPM was confirmed on the setup page, seed it as time-0 marker
+  if(suConfirmedBpm){ session.bpmMarkers=[{time:0,bpm:suConfirmedBpm}]; }
+  startAuthor();
+};
+
+// ── Setup-page BPM lookup ──────────────────────────────────
+let suConfirmedBpm = null;
+
+function suSetResult(html){ document.getElementById('su-bpm-result').innerHTML=html; }
+
+document.getElementById('su-bpm-btn').onclick=async()=>{
+  const artist=document.getElementById('su-artist').value.trim();
+  const title =document.getElementById('su-title').value.trim();
+  const url   =document.getElementById('su-url').value.trim();
+  if(!artist&&!title&&!url){ toast('⚠ Enter a title, artist, or YouTube URL first'); return; }
+  suConfirmedBpm=null;
+  const btn=document.getElementById('su-bpm-btn');
+  btn.disabled=true; btn.textContent='🔍 Searching…';
+  suSetResult('');
+
+  // Try artist+title directly; also try extracting title from YouTube oEmbed
+  let bpmA=null, bpmB=null;
+  const vid=parseVid(url);
+  if(vid){
+    const ytTitle=await getVideoTitle(vid);
+    if(ytTitle){
+      const p=parseVideoTitle(ytTitle);
+      // Back-fill fields if blank
+      if(p.artist&&!artist) document.getElementById('su-artist').value=p.artist;
+      if(p.title &&!title)  document.getElementById('su-title').value=p.title;
+      bpmA=await searchBpmViaFunction(p.artist,p.title);
+    }
+  }
+  if(artist||title) bpmB=await searchBpmViaFunction(artist,title);
+
+  btn.disabled=false; btn.textContent='🔍 Look up BPM';
+
+  const valid=v=>v&&v>=40&&v<=300;
+  if(valid(bpmA)&&valid(bpmB)){
+    if(bpmA===bpmB){
+      suConfirmedBpm=bpmA;
+      suSetResult(`<span class="bpm-val">${bpmA}</span> BPM <button class="bpm-ok confirmed" onclick="suConfirmBpm(${bpmA})">✓ Use this</button>`);
+    } else {
+      suSetResult(`Two results: <span class="bpm-pick" onclick="suConfirmBpm(${bpmA})">${bpmA}</span> or <span class="bpm-pick" onclick="suConfirmBpm(${bpmB})">${bpmB}</span>`);
+    }
+  } else if(valid(bpmA)){
+    suSetResult(`<span class="bpm-val">${bpmA}</span> BPM <button class="bpm-ok" onclick="suConfirmBpm(${bpmA})">✓ Use this</button>`);
+  } else if(valid(bpmB)){
+    suSetResult(`<span class="bpm-val">${bpmB}</span> BPM <button class="bpm-ok" onclick="suConfirmBpm(${bpmB})">✓ Use this</button>`);
+  } else {
+    suSetResult('Not found — set manually after launching');
+  }
+};
+
+function suConfirmBpm(bpm){
+  suConfirmedBpm=bpm;
+  suSetResult(`<span class="bpm-val">${bpm}</span> BPM <button class="bpm-ok confirmed">✓ Confirmed</button>`);
+}
+
+document.getElementById('import-btn').onclick=()=>document.getElementById('sm-file').click();
+document.getElementById('sm-file').onchange=e=>{
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ const p=parseSM(ev.target.result); if(!p)return; const vid=parseVid(prompt(`"${p.title}" imported!\nYouTube URL:`,'') || ''); if(vid)p.vid=vid; session=p; if(p.vid)startAuthor(); else{ document.getElementById('su-url').value=''; toast('✓ Add YouTube URL then EVERYTHING\'S GNARLY'); } };
+  reader.readAsText(file); e.target.value='';
+};
+
+function editChart(i){ const c=saved[i]; session={...c,notes:c.notes.map(n=>({...n})),bpmMarkers:(c.bpmMarkers||[]).map(m=>({...m}))}; startAuthor(); }
+function delChart(i){ if(!confirm(`Delete "${saved[i].title||'Untitled'}"?`))return; saved.splice(i,1); persist(); renderSaved(); }
+function exportIdx(i){ downloadSM(saved[i]); }
+
+/* ═══════════════════════════════════════════
+   SM IMPORT
+═══════════════════════════════════════════ */
+function parseSM(text){
+  const tag=n=>{ const m=text.match(new RegExp(`#${n}:([^;]*);`,'i')); return m?m[1].trim():''; };
+  const title=tag('TITLE')||'Imported', artist=tag('ARTIST')||'Unknown', offset=parseFloat(tag('OFFSET'))||0;
+  const rawBpms=[]; tag('BPMS').replace(/([0-9.]+)=([0-9.]+)/g,(_,b,bpm)=>rawBpms.push({beat:parseFloat(b),bpm:parseFloat(bpm)}));
+  rawBpms.sort((a,b)=>a.beat-b.beat);
+  // Convert beat-based markers to time-based
+  const bpmMarkers=[]; let tCur=offset, bCur=0;
+  for(let i=0;i<rawBpms.length;i++){ const m=rawBpms[i]; const t=tCur+(m.beat-bCur)*(60/(rawBpms[i-1]?.bpm||m.bpm)); bpmMarkers.push({time:i===0?0:parseFloat(t.toFixed(3)),bpm:m.bpm}); if(i+1<rawBpms.length){ tCur=bpmMarkers[i].time+(rawBpms[i+1].beat-m.beat)*(60/m.bpm); bCur=rawBpms[i+1].beat; } }
+  if(!bpmMarkers.length) bpmMarkers.push({time:0,bpm:120});
+
+  const notesM=text.match(/#NOTES:\s*dance-single\s*:[^:]*:[^:]*:[^:]*:[^:]*:([\s\S]*?);/i);
+  if(!notesM){ toast('⚠ No dance-single chart found'); return null; }
+  const notes=[],holdOpen={};
+  notesM[1].split(',').forEach((meas,mIdx)=>{
+    const rows=meas.trim().split(/\n/).map(r=>r.trim()).filter(r=>/^[0-9]{4}$/.test(r)); if(!rows.length)return;
+    const N=rows.length;
+    rows.forEach((row,rIdx)=>{
+      const beat=mIdx*4+rIdx*(4/N);
+      // time from beat using markers
+      let t=offset; const ms=[...bpmMarkers].sort((a,b)=>a.time-b.time);
+      // simple: use first BPM for now (good enough for import)
+      t=offset+beat*(60/(ms[0]?.bpm||120));
+      for(let l=0;l<4;l++){ const c=row[l]; if(c==='1')notes.push({time:t,lane:l,type:'tap'}); else if(c==='2')holdOpen[l]=t; else if(c==='3'&&holdOpen[l]!==undefined){notes.push({time:holdOpen[l],lane:l,type:'hold',endTime:t});delete holdOpen[l];} }
+    });
+  });
+  notes.sort((a,b)=>a.time-b.time);
+  toast(`✓ Imported "${title}" — ${notes.length} notes`);
+  return{title,artist,offset,bpmMarkers,notes,vid:''};
+}
+
+/* ═══════════════════════════════════════════
+   AUTHOR SCREEN
+═══════════════════════════════════════════ */
+function startAuthor(){
+  stopAll(); showPage('pg-author');
+  document.getElementById('au-song').textContent=[session.title,session.artist].filter(Boolean).join(' — ')||'Untitled';
+  document.getElementById('au-pause').textContent='⏸ Pause';
+  document.getElementById('bpm-status').textContent='';
+  setLiveBpm(null);
+  renderBpmChips();
+  sizeHW();
+  new ResizeObserver(()=>requestAnimationFrame(sizeHW)).observe(document.getElementById('au-highway'));
+  createPlayer(session.vid);
+
+  recording=true;
+  const recBtn=document.getElementById('rec-btn');
+  recBtn.classList.add('active');
+  REC_FRAC=REC_FRAC_ON;
+  recBtn.onclick=()=>{ recording=!recording; recBtn.classList.toggle('active',recording); REC_FRAC=recording?REC_FRAC_ON:REC_FRAC_OFF; toast(recording?'● K on':'● K off',1000); };
+
+  // BPM nudges — display only, no commit
+  document.getElementById('bn10').onclick=()=>{ setLiveBpm((getLiveBpm()||120)-10); startMetronome(getLiveBpm()); };
+  document.getElementById('bn1').onclick =()=>{ setLiveBpm((getLiveBpm()||120)-1);  startMetronome(getLiveBpm()); };
+  document.getElementById('bp1').onclick =()=>{ setLiveBpm((getLiveBpm()||120)+1);  startMetronome(getLiveBpm()); };
+  document.getElementById('bp10').onclick=()=>{ setLiveBpm((getLiveBpm()||120)+10); startMetronome(getLiveBpm()); };
+  document.getElementById('bpm-live').oninput=()=>{ if(getLiveBpm())startMetronome(getLiveBpm()); };
+
+  // Tap tempo
+  tapTimes=[]; if(tapResetTimer)clearTimeout(tapResetTimer);
+  function doTap(){
+    const now=performance.now();
+    // Reset if gap > 3 seconds
+    if(tapTimes.length&&now-tapTimes[tapTimes.length-1]>3000) tapTimes=[];
+    tapTimes.push(now);
+    if(tapTimes.length>8) tapTimes.shift(); // keep last 8
+    const btn=document.getElementById('tap-btn');
+    btn.classList.add('flash');
+    setTimeout(()=>btn.classList.remove('flash'),120);
+    if(tapResetTimer)clearTimeout(tapResetTimer);
+    tapResetTimer=setTimeout(()=>{ tapTimes=[]; btn.textContent='✦ Tap'; },3000);
+    if(tapTimes.length<2){ btn.textContent='✦ Tap…'; return; }
+    const intervals=[];
+    for(let i=1;i<tapTimes.length;i++) intervals.push(tapTimes[i]-tapTimes[i-1]);
+    const avg=intervals.reduce((a,b)=>a+b,0)/intervals.length;
+    const bpm=Math.round(60000/avg);
+    if(bpm>=40&&bpm<=300){
+      setLiveBpm(bpm);
+      startMetronome(bpm);
+      btn.textContent=`✦ ${bpm}`;
+    }
+  }
+  document.getElementById('tap-btn').onclick=doTap;
+
+  // Mark — commits BPM at current time
+  document.getElementById('drop-btn').onclick=()=>{
+    const bpm=getLiveBpm(); if(!bpm){ toast('⚠ Set a BPM value first'); return; }
+    const t=getTime();
+    session.bpmMarkers=session.bpmMarkers.filter(m=>Math.abs(m.time-t)>0.5);
+    session.bpmMarkers.push({time:parseFloat(t.toFixed(3)),bpm});
+    session.bpmMarkers.sort((a,b)=>a.time-b.time);
+    renderBpmChips(); toast(`⊕ ${bpm} BPM @ ${fmt(t)}`);
+  };
+
+  document.getElementById('au-pause').onclick=togglePause;
+  document.getElementById('au-undo').onclick=undo;
+  document.getElementById('skip-back').onclick=()=>seekTo(getTime()-10);
+  document.getElementById('fbk').onclick=()=>stepFrame(-1);
+  document.getElementById('ffw').onclick=()=>stepFrame(1);
+  document.getElementById('skip-fwd').onclick=()=>seekTo(getTime()+10);
+  document.getElementById('au-save').onclick=saveChart;
+  document.getElementById('au-export').onclick=()=>downloadSM(session);
+  document.getElementById('au-back').onclick=()=>{ if(session.notes.length&&!confirm('Go back? Unsaved notes will be lost.'))return; stopAll(); suConfirmedBpm=null; suSetResult(''); document.getElementById('su-bpm-btn').textContent='🔍 Look up BPM'; renderSaved(); showPage('pg-setup'); };
+
+  // Highway pointer events
+  const hw=document.getElementById('hw-cv');
+  const hwDown=e=>{ e.preventDefault(); const rect=hw.getBoundingClientRect(),lane=Math.floor((e.clientX-rect.left)/(rect.width/4)); if(lane>=0&&lane<4){ hwPointers.set(e.pointerId,lane); beginInput(lane); flashPad(lane); } };
+  const hwUp=e=>{ const lane=hwPointers.get(e.pointerId); if(lane!==undefined){ endInput(lane); hwPointers.delete(e.pointerId); } };
+  hw.addEventListener('pointerdown',hwDown);
+  hw.addEventListener('pointerup',hwUp);
+  hw.addEventListener('pointercancel',hwUp);
+  hw.addEventListener('pointerleave',hwUp);
+
+  holdStart=[null,null,null,null]; holdActive=[false,false,false,false]; kd={};
+  document.addEventListener('keydown',onKeyDown,true);
+  document.addEventListener('keyup',  onKeyUp,  true);
+
+  authorRaf=requestAnimationFrame(authorLoop);
+  hwRaf    =requestAnimationFrame(hwLoop);
+  updateHUD();
+  // Skip auto-lookup if BPM was already confirmed on the setup page
+  if(suConfirmedBpm){
+    const st=document.getElementById('bpm-status');
+    if(st) st.textContent=`✓ ${suConfirmedBpm} BPM (from setup)`;
+    setLiveBpm(suConfirmedBpm);
+    startMetronome(suConfirmedBpm);
+    renderBpmChips();
+  } else {
+    autoLookupBpm();
+  }
+}
+
+function sizeHW(){ const w=document.getElementById('au-highway'),cv=document.getElementById('hw-cv'); cv.width=w.offsetWidth; cv.height=w.offsetHeight; }
+function setMode(m){ /* no-op, hold-only */ }
+
+function beginInput(lane){ if(!recording||holdActive[lane])return; holdActive[lane]=true; holdStart[lane]={time:getTime(),wallMs:Date.now()}; }
+function endInput(lane){
+  if(!holdActive[lane])return; holdActive[lane]=false;
+  const hs=holdStart[lane]; if(!hs)return; holdStart[lane]=null;
+  const startT=quantize(hs.time), heldMs=Date.now()-hs.wallMs;
+  if(heldMs>=HOLD_MS){ const et=quantize(getTime()); if(et-startT<0.05)placeTap(lane,startT); else placeHold(lane,startT,et); }
+  else placeTap(lane,startT);
+}
+function placeTap(lane,t){ if(session.notes.some(n=>n.lane===lane&&Math.abs(n.time-t)<0.02))return; session.notes.push({time:t,lane,type:'tap'}); session.notes.sort((a,b)=>a.time-b.time); updateHUD(); toast(`${ARROWS[lane]} at ${fmt(t)}`,600); }
+function placeHold(lane,st,et){ session.notes=session.notes.filter(n=>!(n.lane===lane&&n.time>=st&&n.time<=et&&n.type==='tap')); session.notes.push({time:st,lane,type:'hold',endTime:et}); session.notes.sort((a,b)=>a.time-b.time); updateHUD(); toast(`${ARROWS[lane]} hold ${fmt(st)}→${fmt(et)}`,900); }
+function undo(){ if(!session.notes.length)return; const t=getTime(); let bi=session.notes.length-1,bd=Infinity; session.notes.forEach((n,i)=>{ const d=Math.abs(n.time-t); if(d<bd){bd=d;bi=i;} }); const r=session.notes.splice(bi,1)[0]; updateHUD(); toast(`Removed ${ARROWS[r.lane]} ${r.type} at ${fmt(r.time)}`,800); }
+function stepFrame(dir){ try{ if(ytPlayer&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING)ytPlayer.pauseVideo(); }catch(_){} seekTo(getTime()+dir*FRAME_S); }
+function flashPad(lane){ laneFlash[lane]=8; }
+
+function onKeyDown(e){
+  if(document.activeElement?.tagName==='IFRAME')document.activeElement.blur();
+  if(kd[e.key])return; kd[e.key]=true;
+  if(e.key===' '){ e.preventDefault(); togglePause(); return; }
+  if(e.ctrlKey&&(e.key==='z'||e.key==='Z')){ undo(); return; }
+  if(e.key===','){ e.preventDefault(); stepFrame(-1); return; }
+  if(e.key==='.'){ e.preventDefault(); stepFrame(1);  return; }
+  if(e.key.toLowerCase()==='t'&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); document.getElementById('tap-btn')?.click(); return; }
+  const i=LKEYS.indexOf(e.key.toLowerCase());
+  if(i>=0&&!e.ctrlKey&&!e.metaKey){ e.stopPropagation(); if(recording){ beginInput(i); flashPad(i); } }
+}
+function onKeyUp(e){ delete kd[e.key]; const i=LKEYS.indexOf(e.key.toLowerCase()); if(i>=0)endInput(i); }
+
+function updateHUD(){
+  document.getElementById('cnt-taps').textContent  = session.notes.filter(n=>n.type==='tap').length;
+  document.getElementById('cnt-holds').textContent = session.notes.filter(n=>n.type==='hold').length;
+  document.getElementById('cnt-time').textContent  = fmt(getTime());
+}
+function saveChart(){ if(!session.notes.length){ toast('⚠ Tap some notes first'); return; } loadSaved(); const idx=saved.findIndex(c=>c.vid===session.vid&&c.title===session.title&&c.artist===session.artist); const ch={...session,notes:session.notes.map(n=>({...n})),bpmMarkers:session.bpmMarkers.map(m=>({...m})),ts:Date.now()}; if(idx>=0)saved[idx]=ch; else saved.unshift(ch); persist(); toast('✓ Saved!'); }
+
+function authorLoop(){
+  if(!document.getElementById('pg-author').classList.contains('on'))return;
+  const t=getTime(); document.getElementById('au-time').textContent=fmt(t); document.getElementById('cnt-time').textContent=fmt(t);
+  const bpm=currentBpm();
+  if(bpm){ const beat=timeToBeat(t); document.getElementById('au-beat').textContent=`Beat ${(Math.floor(beat)%4)+1}/4 · ${Math.round(bpm)} BPM`; }
+  else document.getElementById('au-beat').textContent='Set BPM → ⊕ Mark';
+  authorRaf=requestAnimationFrame(authorLoop);
+}
+
+/* ═══════════════════════════════════════════
+   HIGHWAY DRAW
+═══════════════════════════════════════════ */
+function hwLoop(){
+  if(!document.getElementById('pg-author').classList.contains('on'))return;
+  const cv=document.getElementById('hw-cv'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height; if(!W||!H){ hwRaf=requestAnimationFrame(hwLoop); return; }
+  const t=getTime(), recY=H*REC_FRAC, pxPerSec=H/PX_WIN, LW=W/4;
+  const NH=Math.max(12,H*0.07), NW=LW*0.78, NR=NH/2;
+
+  ctx.clearRect(0,0,W,H);
+
+  // Beat grid — use committed BPM or visual default 120
+  const gridBpm=currentBpm()||120;
+  const tMin=t-(recY/pxPerSec), tMax=t+((H-recY)/pxPerSec);
+  const beatMin=Math.max(0,tMin*(gridBpm/60)), beatMax=tMax*(gridBpm/60);
+  for(let b=Math.floor(beatMin)-1;b<=Math.ceil(beatMax)+1;b++){
+    if(b<0)continue;
+    const bt=beatToTime(b)||b*(60/gridBpm);
+    const y=recY+(bt-t)*pxPerSec;
+    if(y<-2||y>H+2)continue;
+    const isMeas=b%4===0;
+    ctx.strokeStyle=isMeas?'rgba(255,255,255,0.2)':'rgba(255,255,255,0.05)';
+    ctx.lineWidth=isMeas?1.5:0.5;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    if(isMeas){ ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.font='10px JetBrains Mono'; ctx.textAlign='left'; ctx.fillText('M'+(Math.floor(b/4)+1),3,y>recY?y-3:y+12); }
+  }
+
+  // BPM marker lines
+  session.bpmMarkers.forEach(m=>{ if(!m.bpm)return; const y=recY+(m.time-t)*pxPerSec; if(y<0||y>H)return; ctx.strokeStyle='rgba(232,184,75,0.6)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(232,184,75,0.8)';ctx.font='10px JetBrains Mono';ctx.textAlign='right';ctx.fillText(`${m.bpm}bpm`,W-4,y>recY?y-3:y+12); });
+
+  // Receptor
+  const rg=ctx.createLinearGradient(0,recY-2,0,recY+2); rg.addColorStop(0,'rgba(78,201,160,0)');rg.addColorStop(0.5,'rgba(78,201,160,0.9)');rg.addColorStop(1,'rgba(78,201,160,0)'); ctx.strokeStyle=rg;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,recY);ctx.lineTo(W,recY);ctx.stroke();
+
+  // Receptor circles
+  for(let l=0;l<4;l++){
+    const cx=l*LW+LW/2,R=LW*0.30,lit=laneFlash[l]>0;
+    if(laneFlash[l]>0)laneFlash[l]--;
+    if(lit){ctx.fillStyle=LC[l]+'22';ctx.beginPath();ctx.arc(cx,recY,R+10,0,6.283);ctx.fill();}
+    ctx.strokeStyle=lit?LC[l]+'88':LC[l]+'33';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,recY,R+5,0,6.283);ctx.stroke();
+    ctx.strokeStyle=lit?LC[l]:LC[l]+'99';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(cx,recY,R,0,6.283);ctx.stroke();
+    ctx.fillStyle=lit?LC[l]:LC[l]+'88';ctx.font=`bold ${Math.max(14,LW*0.26)}px Space Grotesk`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ARROWS[l],cx,recY);ctx.textBaseline='alphabetic';
+  }
+
+  // Hold notes
+  session.notes.forEach(n=>{
+    if(n.type!=='hold')return;
+    const yHead=recY+(n.time-t)*pxPerSec, yTail=recY+(n.endTime-t)*pxPerSec;
+    const barTop=Math.min(yHead,yTail),barBot=Math.max(yHead,yTail);
+    if(barBot<-20||barTop>H+20)return;
+    const cx=n.lane*LW+LW/2,bw=LW*0.30;
+    const alpha=yHead<20?Math.max(0,yHead/20):1; ctx.globalAlpha=alpha;
+    const hg=ctx.createLinearGradient(0,barTop,0,barBot); hg.addColorStop(0,LC[n.lane]+'EE');hg.addColorStop(1,LC[n.lane]+'22'); ctx.fillStyle=hg;ctx.fillRect(cx-bw/2,barTop,bw,Math.max(0,barBot-barTop));
+    ctx.fillStyle=LC[n.lane]+'55';ctx.fillRect(cx-bw/2,barBot-4,bw,4);
+    ctx.fillStyle=LC[n.lane];rrect(ctx,cx-NW/2,yHead-NH/2,NW,NH,NR);ctx.fill();
+    ctx.fillStyle='rgba(8,12,16,0.92)';ctx.font=`bold ${Math.max(10,LW*0.22)}px Space Grotesk`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ARROWS[n.lane],cx,yHead);ctx.textBaseline='alphabetic';
+    ctx.globalAlpha=1;
+  });
+
+  // Active hold
+  holdActive.forEach((active,l)=>{
+    if(!active||!holdStart[l])return;
+    // yHead: where the note-head would be if the highway were scrolling
+    // holdStart.time == time when key was pressed (= video time at press)
+    // If pressed in the past: yHead < recY (head scrolled above receptor)
+    // If somehow future (shouldn't happen): yHead > recY
+    const yHead=recY+(holdStart[l].time-t)*pxPerSec;
+    const cx=l*LW+LW/2,bw=LW*0.32;
+    const pulse=0.7+0.3*Math.sin(Date.now()/100);
+    ctx.globalAlpha=pulse;
+
+    if(yHead>recY){
+      // Head still approaching from below — trail: receptor down to head
+      const tg=ctx.createLinearGradient(0,recY,0,yHead);
+      tg.addColorStop(0,LC[l]+'BB');tg.addColorStop(1,LC[l]+'22');
+      ctx.fillStyle=tg;ctx.fillRect(cx-bw/2,recY,bw,yHead-recY);
+      // Pill at approaching head position
+      ctx.fillStyle=LC[l];rrect(ctx,cx-NW/2,yHead-NH/2,NW,NH,NR);ctx.fill();
+      ctx.fillStyle='rgba(8,12,16,0.92)';ctx.font=`bold ${Math.max(10,LW*0.2)}px Space Grotesk`;
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ARROWS[l],cx,yHead);ctx.textBaseline='alphabetic';
+    } else {
+      // Head has reached/passed receptor — pill LOCKED at receptor
+      // Bar fills upward from receptor by elapsed-hold distance
+      const heldSec=t-holdStart[l].time; // seconds held so far
+      const barH=Math.min(recY, heldSec*pxPerSec); // cap at top of highway
+      const barTop=recY-barH;
+      if(barH>0){
+        const bg=ctx.createLinearGradient(0,barTop,0,recY);
+        bg.addColorStop(0,LC[l]+'22');bg.addColorStop(1,LC[l]+'CC');
+        ctx.fillStyle=bg;ctx.fillRect(cx-bw/2,barTop,bw,barH);
+      }
+      // Pill locked at receptor
+      ctx.fillStyle=LC[l];rrect(ctx,cx-NW/2,recY-NH/2,NW,NH,NR);ctx.fill();
+      ctx.fillStyle='rgba(8,12,16,0.92)';ctx.font=`bold ${Math.max(10,LW*0.2)}px Space Grotesk`;
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ARROWS[l],cx,recY);ctx.textBaseline='alphabetic';
+    }
+    ctx.globalAlpha=1;
+  });
+
+  // Tap notes
+  session.notes.forEach(n=>{
+    if(n.type!=='tap')return;
+    const y=recY+(n.time-t)*pxPerSec; if(y<-NH||y>H+NH)return;
+    const cx=n.lane*LW+LW/2;
+    const alpha=y<20?Math.max(0,y/20):1; ctx.globalAlpha=alpha;
+    ctx.fillStyle=LC[n.lane];rrect(ctx,cx-NW/2,y-NH/2,NW,NH,NR);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.18)';rrect(ctx,cx-NW/2+8,y-NH/2+4,NW-16,4,2);ctx.fill();
+    ctx.fillStyle='rgba(8,12,16,0.92)';ctx.font=`bold ${Math.max(10,LW*0.22)}px Space Grotesk`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ARROWS[n.lane],cx,y);ctx.textBaseline='alphabetic';
+    ctx.globalAlpha=1;
+  });
+
+  hwRaf=requestAnimationFrame(hwLoop);
+}
+
+/* ═══════════════════════════════════════════
+   SM EXPORT
+═══════════════════════════════════════════ */
+function downloadSM(s){
+  if(!s.notes.length){ toast('⚠ No notes to export'); return; }
+  const markers=[...s.bpmMarkers].sort((a,b)=>a.time-b.time);
+  if(!markers.length)markers.push({time:0,bpm:120});
+
+  // Convert time→beat for each note
+  function t2b(t){
+    if(!markers.length)return t*(120/60);
+    let beat=0,prev=markers[0].time;
+    for(let i=0;i<markers.length;i++){
+      const m=markers[i],next=i+1<markers.length?markers[i+1].time:Infinity;
+      const seg=Math.min(t,next)-Math.max(prev,m.time);
+      if(seg>0)beat+=seg*(m.bpm/60);
+      if(t<=next)break;
+      prev=next;
+    }
+    return Math.max(0,beat);
+  }
+  function toSlot(t){ return Math.max(0,Math.round(t2b(t)*4)); }
+
+  // Build BPMS tag: beat_position=bpm
+  const bpmsTag=markers.map(m=>`${t2b(m.time).toFixed(3)}=${m.bpm.toFixed(3)}`).join(',');
+
+  const slotMap={};
+  s.notes.forEach(n=>{
+    if(n.type==='tap'){const k=`${toSlot(n.time)}_${n.lane}`;if(!slotMap[k])slotMap[k]='1';}
+    else if(n.type==='hold'){slotMap[`${toSlot(n.time)}_${n.lane}`]='2';slotMap[`${toSlot(n.endTime)}_${n.lane}`]='3';}
+  });
+  const maxSlot=Math.max(...Object.keys(slotMap).map(k=>+k.split('_')[0]));
+  const numM=Math.max(4,Math.ceil((maxSlot+1)/16)+2);
+  const measures=[];
+  for(let m=0;m<numM;m++){
+    const rows=Array.from({length:16},()=>['0','0','0','0']);
+    for(const[k,v]of Object.entries(slotMap)){const[slot,lane]=k.split('_').map(Number);const ls=slot-m*16;if(ls>=0&&ls<16)rows[ls][lane]=v;}
+    const has16=rows.some((r,i)=>i%2!==0&&r.some(c=>c!=='0')),has8=rows.some((r,i)=>i%4!==0&&r.some(c=>c!=='0'));
+    const res=has16?16:has8?8:4,step=16/res,tr=[];
+    for(let r=0;r<16;r+=step)tr.push(rows[r].join(''));
+    measures.push(tr.join('\n'));
+  }
+  const density=s.notes.length/measures.length,meter=density<2?1:density<4?2:density<6?3:density<8?4:5;
+  const sm=`#TITLE:${s.title||'Untitled'};\n#SUBTITLE:;\n#ARTIST:${s.artist||'Unknown'};\n#TITLETRANSLIT:;\n#SUBTITLETRANSLIT:;\n#ARTISTTRANSLIT:;\n#GENRE:K-Pop;\n#CREDIT:Choreo.App;\n#BANNER:;\n#BACKGROUND:;\n#CDTITLE:;\n#MUSIC:;\n#OFFSET:${(s.offset||0).toFixed(3)};\n#SAMPLESTART:45.000;\n#SAMPLELENGTH:10.000;\n#SELECTABLE:YES;\n#BPMS:${bpmsTag};\n#STOPS:;\n\n#NOTES:\n     dance-single:\n     Choreo.App:\n     Edit:\n     ${meter}:\n     0.500,0.500,0.500,0.500,0.500:\n${measures.join(',\n')};\n`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([sm],{type:'text/plain'}));a.download=`${(s.title||'Untitled').replace(/[^a-zA-Z0-9]/g,'_')}.sm`;a.click();URL.revokeObjectURL(a.href);
+  toast(`✓ ${s.title||'Untitled'}.sm exported`);
+}
+
+/* ═══════════════════════════════════════════
+   CLEANUP
+═══════════════════════════════════════════ */
+function stopAll(){
+  if(metronomeId){clearInterval(metronomeId);metronomeId=null;}
+  if(authorRaf){cancelAnimationFrame(authorRaf);authorRaf=null;}
+  if(hwRaf){cancelAnimationFrame(hwRaf);hwRaf=null;}
+  document.removeEventListener('keydown',onKeyDown,true);
+  document.removeEventListener('keyup',  onKeyUp,  true);
+  if(ytPlayer){try{ytPlayer.destroy();}catch(_){}ytPlayer=null;}
+  document.getElementById('au-slot').innerHTML='';
+  kd={}; holdStart=[null,null,null,null]; holdActive=[false,false,false,false];
+  hwPointers.clear(); laneFlash.fill(0);
+  tapTimes=[]; if(tapResetTimer){clearTimeout(tapResetTimer);tapResetTimer=null;}
+}
+
+loadSaved(); renderSaved();
+</script>
+</body>
+</html>
